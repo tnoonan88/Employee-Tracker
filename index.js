@@ -1,13 +1,7 @@
-// const express = require('express');
 const inquirer =  require('inquirer');
 const mysql = require('mysql2');
 const cTable = require('console.table');
-
-// const PORT = process.env.PORT || 3001;
-// const app = express();
-
-// app.use(express.urlencoded({ extended: false }));
-// app.use(express.json());
+const res = require('express/lib/response');
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -15,7 +9,7 @@ const db = mysql.createConnection({
     password: 'rootroot',
     database: 'employees_db'
 },
-console.log('You are connected to the Employee Database.')
+console.log('You are now connected to the Employee Database.')
 );
 
 db.connect((err) => {
@@ -42,22 +36,22 @@ function startApp() {
         },
     ])
     .then((response) => {
-        if (response.prompts === 'View all departments'){
+        if (response.startMenu === 'View all departments'){
             viewAllDepts();
         }
-        else if (response.prompts === 'View all roles'){
+        else if (response.startMenu === 'View all roles'){
             viewAllRoles();
         }
-        else if (response.prompts === 'View all employees'){
+        else if (response.startMenu === 'View all employees'){
             viewAllEmps();
         }
-        else if (response.prompts === 'Add a department'){
+        else if (response.startMenu === 'Add a department'){
             addDept();
         }
-        else if (response.prompts === 'Add a role'){
+        else if (response.startMenu === 'Add a role'){
             addRole();
         }
-        else if (response.prompts === 'Add an employee'){
+        else if (response.startMenu === 'Add an employee'){
             addEmp();
         }
         else {
@@ -68,6 +62,90 @@ function startApp() {
 };
 
 function viewAllDepts() {
-    db.query(`SELECT * FROM department`)
-        return console.table(response)
+    db.query(
+        'SELECT * FROM department',
+        function(err, results) {
+            console.table(results);
+            if (err) throw err;
+            startApp();
+        })
 };
+
+function viewAllRoles() {
+    db.query(
+        'SELECT * FROM role',
+        function(err, results) {
+            console.table(results);
+            if (err) throw err;
+            startApp();
+        })
+};
+
+function viewAllEmps() {
+    db.query(
+        'SELECT * FROM employee',
+        function(err, results) {
+            console.table(results);
+            if (err) throw err;
+            startApp();
+        })
+};
+
+function addDept() {
+    inquirer.prompt([ 
+        {
+            type: 'input',
+            name: 'deptName',
+            message: 'Enter a department name:'
+        }
+    ])
+
+    .then((response) => {
+    db.query(
+        `INSERT INTO department (name) VALUES (?)`,
+        response.deptName,
+        function(err, results) {
+            console.table('New department added.');
+            if (err) throw err;
+            startApp();
+        })
+    })
+};
+
+function addRole() {
+    db.query(
+        'SELECT * FROM department',
+        function(err, results) {
+            const dept = results.map(dept => {
+                return {name: dept.name, value: dept.id}
+                });
+                if (err) throw err;
+                inquirer.prompt([ 
+                    {
+                        type: 'list',
+                        name: 'department_id',
+                        message: 'Choose a department:',
+                        choices: dept
+                    },
+                    {
+                        type: 'input',
+                        name: 'title',
+                        message: 'New role name:'
+                    },
+                    {
+                        type: 'input',
+                        name: 'salary',
+                        message: 'New role salary:'
+                    }
+                ])
+                .then((response) => {
+                    db.query(
+                        `INSERT INTO role SET ?`,
+                        response,
+                        function(err, results) {
+                            console.table('New role added.');
+                            if (err) throw err;
+                            startApp();
+                        })
+                    })
+                })};
